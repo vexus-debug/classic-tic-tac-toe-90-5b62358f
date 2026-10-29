@@ -14,7 +14,27 @@
 - Dental dashboard data is role-focused: leadership sees clinic financials, dentists see their assigned schedule, and front-desk roles see queue and collections.
 - All frontend images (including dashboard screenshots on marketing pages) must be stored as real image files in the codebase (`src/assets/`, imported directly) — never as `.asset.json` CDN pointers or remote storage URLs. Fresh dashboard screenshots go in `src/assets/dashboard-shots/`. Tutorial image files remain isolated and unchanged. Why: CDN pointers broke (404) when the project moved; in-code images always travel with the repo.
 - Every shipped feature, improvement or bug fix must be logged as a new entry (newest first) in `src/data/updates.ts` (the public /updates page) in the same change — no exceptions.
-- MANDATORY for any design/UI/layout/visual/styling task (plan or implementation): go through the Garden Skills suite — consult `skills/README.md`, then read `skills/web-design-engineer/SKILL.md` in full and follow its entire workflow, plus every reference file it routes to under `skills/web-design-engineer/references/` and any other matching design skills (e.g. `skills/creative-design/`, `skills/web-development/tailwind-design-system/`). Do not use `docs/design-skill/`. Why: the user requires all design work to be governed by the Garden Skills suite, not ad-hoc plans.
-- MANDATORY for every AI assistant: the full Garden Skills suite lives in `skills/` (index: `skills/README.md`). Before any task matching a skill (design, articles, images, motion, presentations, knowledge retrieval), read that skill's `SKILL.md` in full plus its routed references and follow its workflow exactly. Why: guidelines must be tool-agnostic so any AI builder applies them identically.
+- MANDATORY GATEPASS: SKILL VERIFICATION BEFORE ACTION
 
-- MANDATORY SKILL LOOKUP: before planning or implementing any task, consult `skills/README.md`, identify the matching category and skill, read that skill's `SKILL.md` in full and follow its workflow. Why: a curated skill library ensures every AI agent applies the same proven practices.
+  STOP. Before drafting a plan, executing a tool, modifying any file, running queries, or generating code, you MUST complete this 3-step Skill Gatepass. Any action taken prior to completing this protocol is considered an invalid hallucination.
+
+  1. DISCOVERY (`skills/README.md`)
+
+     Inspect `skills/README.md` to map the user's request against every available domain: architecture, database, security, backend, frontend/UI, design, performance, documentation, or testing.
+
+     Explicitly identify the 1–3 matching skills (e.g., `skills/database/database-architect`, `skills/security/security-best-practices`, `skills/web-design-engineer`).
+
+  2. INSPECTION & WORKFLOW LOADING
+
+     Read the relevant `SKILL.md` file(s) and any referenced workflows under `references/` in full before making technical choices.
+
+     Never rely on general memory or assume conventions when a dedicated project skill exists.
+
+  3. CONFIRMATION IN PROSE
+
+     Begin your response or plan by stating the active gatepass receipt:
+     `[Skill Gatepass Active: Loaded <skill-name-1>, <skill-name-2>]`
+
+     Explicitly list the core constraints, checklists, and patterns required by those skills that will govern the current work.
+
+  Only after this declaration may you propose an architecture, write SQL migrations, edit source files, or execute builds.
