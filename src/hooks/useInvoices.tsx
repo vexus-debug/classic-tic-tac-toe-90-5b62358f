@@ -13,6 +13,7 @@ export interface InvoiceWithPatient {
   total_amount: number;
   subtotal: number;
   amount_paid: number;
+  adjustments_total: number;
   notes: string;
   created_at: string;
   patient_name: string;
@@ -26,7 +27,25 @@ export interface InvoiceItem {
   quantity: number;
   unit_price: number;
   line_total: number;
+  tooth_number?: string | null;
+  surfaces?: string | null;
+  cdt_code?: string | null;
+  provider_id?: string | null;
 }
+
+export interface DentalLineFields {
+  tooth_number?: string | null;
+  surfaces?: string | null;
+  cdt_code?: string | null;
+  provider_id?: string | null;
+}
+
+const dental = (li: DentalLineFields) => ({
+  tooth_number: li.tooth_number?.toString().trim() || null,
+  surfaces: li.surfaces?.trim().toUpperCase() || null,
+  cdt_code: li.cdt_code?.trim().toUpperCase() || null,
+  provider_id: li.provider_id || null,
+});
 
 export function useInvoices() {
   const { currentOrg } = useOrg();
@@ -37,7 +56,7 @@ export function useInvoices() {
     queryFn: async () => {
       const { data, error } = await (supabase as any)
         .from("invoices")
-        .select("*, patients(first_name, last_name), payments(amount)")
+        .select("*, patients(first_name, last_name), payments(amount), invoice_adjustments(amount)")
         .eq("org_id", orgId)
         .order("invoice_date", { ascending: false });
       if (error) throw error;
@@ -52,6 +71,7 @@ export function useInvoices() {
         total_amount: inv.total || 0,
         subtotal: inv.subtotal || 0,
         amount_paid: (inv.payments || []).reduce((s: number, p: any) => s + Number(p.amount || 0), 0),
+        adjustments_total: (inv.invoice_adjustments || []).reduce((s: number, a: any) => s + Number(a.amount || 0), 0),
         notes: inv.notes,
         created_at: inv.created_at,
         patient_name: inv.patients
@@ -118,13 +138,13 @@ interface CreateInvoiceInput {
   discount_percent: number;
   payment_method: string;
   amount_paid: number;
-  line_items: {
+  line_items: ({
     treatment_id: string | null;
     description: string;
     quantity: number;
     unit_price: number;
     line_total: number;
-  }[];
+  } & DentalLineFields)[];
 }
 
 export function useCreateInvoice() {
@@ -161,6 +181,7 @@ export function useCreateInvoice() {
         quantity: li.quantity,
         unit_price: li.unit_price,
         line_total: li.line_total,
+        ...dental(li),
       }));
       const { error: itemsError } = await (supabase as any).from("invoice_items").insert(items);
       if (itemsError) throw itemsError;
@@ -196,14 +217,14 @@ export function useUpdateInvoice() {
       id: string;
       discount_percent: number;
       notes: string;
-      line_items: {
+      line_items: ({
         id?: string;
         treatment_id: string | null;
         description: string;
         quantity: number;
         unit_price: number;
         line_total: number;
-      }[];
+      } & DentalLineFields)[];
     }) => {
       const subtotal = line_items.reduce((s, i) => s + i.line_total, 0);
       const discountAmount = (subtotal * discount_percent) / 100;
@@ -223,6 +244,7 @@ export function useUpdateInvoice() {
         quantity: li.quantity,
         unit_price: li.unit_price,
         line_total: li.line_total,
+        ...dental(li),
       }));
       const { error: itemsError } = await (supabase as any).from("invoice_items").insert(items);
       if (itemsError) throw itemsError;
