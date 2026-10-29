@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Trash2, Plus } from "lucide-react";
+import { Trash2, Plus, Stethoscope } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
@@ -17,6 +17,8 @@ import {
 import { usePatients } from "@/hooks/usePatients";
 import { useTreatments } from "@/hooks/useTreatments";
 import { useCreateInvoice } from "@/hooks/useInvoices";
+import { useStaff } from "@/hooks/useStaff";
+import { DentalLineFieldsRow, CLINICAL_PROVIDER_ROLES } from "@/components/dashboard/DentalLineFieldsRow";
 
 const paymentMethods = ["Cash", "Bank Transfer", "POS", "Card"];
 
@@ -29,6 +31,10 @@ const invoiceSchema = z.object({
     description: z.string().optional(),
     unitPrice: z.coerce.number().min(0).optional(),
     key: z.string().optional(),
+    toothNumber: z.string().optional(),
+    surfaces: z.string().optional(),
+    cdtCode: z.string().optional(),
+    providerId: z.string().optional(),
   }).refine((l) => !!l.treatmentId || !!l.description?.trim(), { message: "Select a treatment", path: ["treatmentId"] })).min(1, "Add at least one item"),
   discount: z.coerce.number().min(0).max(100).optional(),
   paymentMethod: z.string().min(1, "Select payment method"),
@@ -56,6 +62,9 @@ export function CreateInvoiceDialog({ open, onOpenChange, preselectedPatientId, 
   const { data: patients = [] } = usePatients();
   const { data: treatments = [] } = useTreatments();
   const createInvoice = useCreateInvoice();
+  const { data: staff = [] } = useStaff();
+  const providers = staff.filter((m) => CLINICAL_PROVIDER_ROLES.includes(String(m.role).toLowerCase()) && m.status !== "inactive");
+  const [dentalOpen, setDentalOpen] = useState<Record<string, boolean>>({});
 
   const form = useForm<InvoiceForm>({
     resolver: zodResolver(invoiceSchema),
@@ -119,6 +128,10 @@ export function CreateInvoiceDialog({ open, onOpenChange, preselectedPatientId, 
         quantity: li.quantity,
         unit_price: unitPrice,
         line_total: unitPrice * li.quantity,
+        tooth_number: li.toothNumber,
+        surfaces: li.surfaces,
+        cdt_code: li.cdtCode,
+        provider_id: li.providerId,
       };
     });
 
@@ -180,7 +193,8 @@ export function CreateInvoiceDialog({ open, onOpenChange, preselectedPatientId, 
                 const isPlanLine = line.description !== undefined;
 
                 return (
-                  <div key={field.id} className="flex items-end gap-2">
+                  <div key={field.id} className="space-y-1.5">
+                  <div className="flex items-end gap-2">
                     {isPlanLine ? (
                       <>
                         <FormField control={form.control} name={`lineItems.${index}.description`} render={({ field }) => (
@@ -228,6 +242,22 @@ export function CreateInvoiceDialog({ open, onOpenChange, preselectedPatientId, 
                         <Trash2 className="h-4 w-4 text-destructive" />
                       </Button>
                     )}
+                    <Button type="button" variant={dentalOpen[field.id] || line.toothNumber || line.cdtCode ? "secondary" : "ghost"} size="icon" className="h-9 w-9 shrink-0" title="Tooth, surfaces, code and provider (optional)" aria-label="Dental details" onClick={() => setDentalOpen((o) => ({ ...o, [field.id]: !o[field.id] }))}>
+                      <Stethoscope className="h-4 w-4" />
+                    </Button>
+                  </div>
+                  {(dentalOpen[field.id] || line.toothNumber || line.cdtCode || line.surfaces || line.providerId) && (
+                    <DentalLineFieldsRow
+                      providers={providers}
+                      value={{ tooth_number: line.toothNumber, surfaces: line.surfaces, cdt_code: line.cdtCode, provider_id: line.providerId }}
+                      onChange={(v) => {
+                        form.setValue(`lineItems.${index}.toothNumber`, v.tooth_number ?? "");
+                        form.setValue(`lineItems.${index}.surfaces`, v.surfaces ?? "");
+                        form.setValue(`lineItems.${index}.cdtCode`, v.cdt_code ?? "");
+                        form.setValue(`lineItems.${index}.providerId`, v.provider_id ?? "");
+                      }}
+                    />
+                  )}
                   </div>
                 );
               })}
